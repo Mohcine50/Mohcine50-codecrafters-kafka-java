@@ -48,8 +48,8 @@ public class Main {
     private static byte[] get_correlation_id(InputStream in) throws IOException {
 
         byte[] message_size = in.readNBytes(4);
-        byte[] request_api_key = in.readNBytes(4);
-        byte[] request_api_version = in.readNBytes(4);
+        byte[] request_api_key = in.readNBytes(2);
+        byte[] request_api_version = in.readNBytes(2);
         byte[] correlation_id = in.readNBytes(4);
 
         return correlation_id;

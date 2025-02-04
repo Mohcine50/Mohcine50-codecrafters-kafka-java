@@ -1,11 +1,11 @@
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Main {
   public static void main(String[] args){
-    
+
+      System.out.println("Program started");
 
      ServerSocket serverSocket = null;
      Socket clientSocket = null;
@@ -20,10 +20,17 @@ public class Main {
 
        OutputStream out = clientSocket.getOutputStream();
 
+         InputStream in = clientSocket.getInputStream();
+
+         byte[] correlationId = get_correlation_id(in);
+
+
 
        out.write(new byte[]{0, 0, 0, 0});
-       out.write(new byte[]{0, 0, 0, 7});
+       out.write(correlationId);
        out.flush();
+
+
 
      } catch (IOException e) {
        System.out.println("IOException: " + e.getMessage());
@@ -37,4 +44,15 @@ public class Main {
        }
      }
   }
+
+    private static byte[] get_correlation_id(InputStream in) throws IOException {
+
+        byte[] message_size = in.readNBytes(4);
+        byte[] request_api_key = in.readNBytes(4);
+        byte[] request_api_version = in.readNBytes(4);
+        byte[] correlation_id = in.readNBytes(4);
+
+        return correlation_id;
+  }
+
 }

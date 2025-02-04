@@ -28,6 +28,7 @@ public class Main {
 
        out.write(new byte[]{0, 0, 0, 0});
        out.write(correlationId);
+       out.write(new byte[]{0, 23});
        out.flush();
 
 

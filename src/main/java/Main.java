@@ -92,11 +92,11 @@ public class Main {
             baos.write(0);
             baos.write(new byte[]{0,0});
             baos.write(2);
-            baos.write(new byte[]{0,18});
-            baos.write(new byte[]{0,0});
-            baos.write(new byte[]{0,4});
+            baos.write(ByteBuffer.allocate(2).putInt(18).array());
+            baos.write(ByteBuffer.allocate(2).putInt(0).array());
+            baos.write(ByteBuffer.allocate(2).putInt(4).array());
             baos.write(0);
-            baos.write(new byte[]{0,0,0,19});
+            baos.write(ByteBuffer.allocate(4).putInt(120).array());
             baos.write(0);
         } catch (IOException e) {
             throw new RuntimeException(e);

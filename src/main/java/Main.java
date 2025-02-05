@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,23 +37,14 @@ public class Main {
             var api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
 
 
-            if (api_version >= 0 && api_version <= 4) {
+            ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
 
+            int message_size = baos.size();
+            byte[] response = baos.toByteArray();
 
-                ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID));
-
-                int message_size = baos.size();
-                byte[] response = baos.toByteArray();
-
-                byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
-                out.write(size_byte);
-                out.write(response);
-                out.flush();
-            } else {
-                System.out.println("35");
-                out.write(new byte[]{0, 35});
-                out.flush();
-            }
+            byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
+            out.write(size_byte);
+            out.write(response);
 
 
 
@@ -77,20 +67,29 @@ public class Main {
      * error_code [api_keys] throttle_time_ms TAG_BUFFER
      */
 
-    private static ByteArrayOutputStream get_response(byte[] cId) {
+    private static ByteArrayOutputStream get_response(byte[] cId, short api_version) {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
+
         try {
-            baos.write(cId);
-            baos.write(new byte[]{0, 0});
-            baos.write(2);
-            baos.write(new byte[]{0, 18});
-            baos.write(new byte[]{0, 0});
-            baos.write(new byte[]{0, 4});
-            baos.write(0);
-            baos.write(new byte[]{0, 0, 0, 0});
-            baos.write(0);
+
+            if (api_version >= 0 && api_version <= 4) {
+
+                baos.write(cId);
+                baos.write(new byte[]{0, 0});
+                baos.write(2);
+                baos.write(new byte[]{0, 18});
+                baos.write(new byte[]{0, 0});
+                baos.write(new byte[]{0, 4});
+                baos.write(0);
+                baos.write(new byte[]{0, 0, 0, 0});
+                baos.write(0);
+            } else {
+                baos.write(cId);
+                baos.write(new byte[]{0, 35});
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

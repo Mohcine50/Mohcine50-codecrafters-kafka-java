@@ -35,30 +35,23 @@ public class Main {
             InputStream in = clientSocket.getInputStream();
 
             Map<String, byte[]> parseStreamMap = parseStream(in);
-            System.out.println(parseStreamMap);
             var api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
+
+            System.out.println(api_version);
 
             if (api_version >= 0 || api_version <= 4) {
 
-
-                ByteArrayOutputStream baos =  get_response(parseStreamMap.get(CORRELATION_ID));
+                ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID));
 
                 int message_size = baos.size();
                 byte[] response = baos.toByteArray();
 
                 byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
-
-                System.out.println(size_byte);
-                System.out.println(message_size);
-                System.out.println(new String(response, StandardCharsets.UTF_8));
-
                 out.write(size_byte);
                 out.write(response);
-
-
-
-            } else out.write(new byte[]{0, 35});
-
+            } else {
+                out.write(new byte[]{0, 35});
+            }
 
             out.flush();
 
@@ -81,19 +74,19 @@ public class Main {
      * error_code [api_keys] throttle_time_ms TAG_BUFFER
      */
 
-    private static ByteArrayOutputStream get_response(byte[] cId){
+    private static ByteArrayOutputStream get_response(byte[] cId) {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
             baos.write(cId);
-            baos.write(new byte[]{0,0});
+            baos.write(new byte[]{0, 0});
             baos.write(2);
-            baos.write(new byte[]{0,18});
-            baos.write(new byte[]{0,0});
-            baos.write(new byte[]{0,4});
+            baos.write(new byte[]{0, 18});
+            baos.write(new byte[]{0, 0});
+            baos.write(new byte[]{0, 4});
             baos.write(0);
-            baos.write(new byte[]{0,0,0,0});
+            baos.write(new byte[]{0, 0, 0, 0});
             baos.write(0);
         } catch (IOException e) {
             throw new RuntimeException(e);

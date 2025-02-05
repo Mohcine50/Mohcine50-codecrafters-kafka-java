@@ -21,32 +21,37 @@ public class Main {
         ServerSocket serverSocket = null;
         Socket clientSocket = null;
         int port = 9092;
+
+
+
         try {
             serverSocket = new ServerSocket(port);
+
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
             // ensures that we don't run into 'Address already in use' errors
             serverSocket.setReuseAddress(true);
             // Wait for connection from client.
-            clientSocket = serverSocket.accept();
+            while (true) {
+                clientSocket = serverSocket.accept();
 
-            OutputStream out = clientSocket.getOutputStream();
+                OutputStream out = clientSocket.getOutputStream();
 
-            InputStream in = clientSocket.getInputStream();
+                InputStream in = clientSocket.getInputStream();
 
-            Map<String, byte[]> parseStreamMap = parseStream(in);
-            var api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
-
-
-            ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
-
-            int message_size = baos.size();
-            byte[] response = baos.toByteArray();
-
-            byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
-            out.write(size_byte);
-            out.write(response);
+                Map<String, byte[]> parseStreamMap = parseStream(in);
+                var api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
 
 
+                ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
+
+                int message_size = baos.size();
+                byte[] response = baos.toByteArray();
+
+                byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
+                out.write(size_byte);
+                out.write(response);
+
+            }
 
 
         } catch (IOException e) {

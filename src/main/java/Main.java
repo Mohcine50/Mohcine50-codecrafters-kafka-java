@@ -41,7 +41,7 @@ public class Main {
             if (api_version >= 0 || api_version <= 4) {
 
 
-                ByteArrayOutputStream baos =  get_response();
+                ByteArrayOutputStream baos =  get_response(parseStreamMap.get(CORRELATION_ID));
 
                 int message_size = baos.size();
                 byte[] response = baos.toByteArray();
@@ -53,9 +53,6 @@ public class Main {
                 System.out.println(new String(response, StandardCharsets.UTF_8));
 
                 out.write(size_byte);
-
-                out.write(parseStreamMap.get(CORRELATION_ID));
-
                 out.write(response);
 
 
@@ -84,11 +81,12 @@ public class Main {
      * error_code [api_keys] throttle_time_ms TAG_BUFFER
      */
 
-    private static ByteArrayOutputStream get_response(){
+    private static ByteArrayOutputStream get_response(byte[] cId){
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
+            baos.write(cId);
             baos.write(new byte[]{0,0});
             baos.write(2);
             baos.write(new byte[]{0,18});

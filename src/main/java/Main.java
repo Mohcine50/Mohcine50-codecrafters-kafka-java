@@ -41,6 +41,8 @@ public class Main {
 
             if (api_version >= 0 || api_version <= 4) {
 
+
+                System.out.println("4");
                 ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID));
 
                 int message_size = baos.size();
@@ -51,6 +53,7 @@ public class Main {
                 out.write(response);
                 out.flush();
             } else {
+                System.out.println("35");
                 out.write(new byte[]{0, 35});
                 out.flush();
             }

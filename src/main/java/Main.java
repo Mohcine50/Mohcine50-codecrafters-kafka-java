@@ -49,11 +49,13 @@ public class Main {
                 byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
                 out.write(size_byte);
                 out.write(response);
+                out.flush();
             } else {
                 out.write(new byte[]{0, 35});
+                out.flush();
             }
 
-            out.flush();
+
 
 
         } catch (IOException e) {

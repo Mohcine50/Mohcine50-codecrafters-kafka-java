@@ -37,12 +37,10 @@ public class Main {
             Map<String, byte[]> parseStreamMap = parseStream(in);
             var api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
 
-            System.out.println(api_version);
 
-            if (api_version >= 0 || api_version <= 4) {
+            if (api_version >= 0 && api_version <= 4) {
 
 
-                System.out.println("4");
                 ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID));
 
                 int message_size = baos.size();

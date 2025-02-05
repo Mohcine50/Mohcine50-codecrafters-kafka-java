@@ -71,7 +71,6 @@ public class Main {
      * Response for the ApiVersion 18 on V4
      * error_code [api_keys] throttle_time_ms TAG_BUFFER
      */
-
     private static ByteArrayOutputStream get_response(byte[] cId, short api_version) {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

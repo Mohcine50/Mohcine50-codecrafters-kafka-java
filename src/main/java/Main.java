@@ -32,6 +32,7 @@ public class Main {
             serverSocket.setReuseAddress(true);
             // Wait for connection from client.
             while (true) {
+
                 clientSocket = serverSocket.accept();
 
                 OutputStream out = clientSocket.getOutputStream();
@@ -50,7 +51,7 @@ public class Main {
                 byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
                 out.write(size_byte);
                 out.write(response);
-
+                out.flush();
             }
 
 

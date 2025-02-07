@@ -1,60 +1,48 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Main {
 
-
     final static String MESSAGE_SIZE = "MESSAGE_SIZE";
     final static String API_KEY = "API_KEY";
     final static String API_VERSION = "API_VERSION";
     final static String CORRELATION_ID = "CORRELATION_ID";
-
-
+    final static String REMAINING_BYTES = "REMAINING_BYTES";
+    
     public static void main(String[] args) {
 
         System.out.println("Program started");
 
-        ServerSocket serverSocket = null;
+        ServerSocket serverSocket ;
         Socket clientSocket = null;
         int port = 9092;
+        
+      
 
 
-
+        
         try {
+
             serverSocket = new ServerSocket(port);
 
-            // Since the tester restarts your program quite often, setting SO_REUSEADDR
-            // ensures that we don't run into 'Address already in use' errors
             serverSocket.setReuseAddress(true);
-            // Wait for connection from client.
-            while (true) {
-
+                // Wait for connection from client.
+                System.out.println("Accepting new connecion");
                 clientSocket = serverSocket.accept();
-
-                OutputStream out = clientSocket.getOutputStream();
-
-                InputStream in = clientSocket.getInputStream();
-
-                Map<String, byte[]> parseStreamMap = parseStream(in);
-                var api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
+                
 
 
-                ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
-
-                int message_size = baos.size();
-                byte[] response = baos.toByteArray();
-
-                byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
-                out.write(size_byte);
-                out.write(response);
-                out.flush();
-            }
-
-
+                while (true) {
+                    handleRequest(clientSocket);
+                }
+               
+            
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         } finally {
@@ -66,7 +54,30 @@ public class Main {
                 System.out.println("IOException: " + e.getMessage());
             }
         }
+
     }
+
+    private static void handleRequest(Socket clientSocket) throws IOException{
+
+                        // Where we create the response
+                        OutputStream out = clientSocket.getOutputStream();
+                        // From where we read the request
+                        InputStream in = clientSocket.getInputStream();
+        //We parse the input from the Input Stream
+        Map<String, byte[]> parseStreamMap = parseStream(in);
+        short api_version = ByteBuffer.allocate(2).wrap(parseStreamMap.get(API_VERSION)).getShort();
+
+        ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
+
+        int message_size = baos.size();
+        byte[] response = baos.toByteArray();
+
+        byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
+        out.write(size_byte);
+        out.write(response);
+        out.flush();
+    }
+    
 
     /*
      * Response for the ApiVersion 18 on V4
@@ -76,10 +87,8 @@ public class Main {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-
         try {
-
-            if (api_version >= 0 && api_version <= 4) {
+            if (api_version == 4) {
 
                 baos.write(cId);
                 baos.write(new byte[]{0, 0});
@@ -105,18 +114,23 @@ public class Main {
 
     private static Map<String, byte[]> parseStream(InputStream in) throws IOException {
 
+        DataInputStream dataInputStream = new DataInputStream(in);
+
         Map<String, byte[]> map = new HashMap<String, byte[]>();
 
-        byte[] message_size = in.readNBytes(4);
-        byte[] request_api_key = in.readNBytes(2);
-        byte[] request_api_version = in.readNBytes(2);
-        byte[] correlation_id = in.readNBytes(4);
+        byte[] message_size = dataInputStream.readNBytes(4);
+        byte[] request_api_key = dataInputStream.readNBytes(2);
+        byte[] request_api_version = dataInputStream.readNBytes(2);
+        byte[] correlation_id = dataInputStream.readNBytes(4);
 
+        byte[] remainingBytes = new byte[dataInputStream.available()];
+        dataInputStream.readFully(remainingBytes);
 
         map.put(MESSAGE_SIZE, message_size);
         map.put(API_KEY, request_api_key);
         map.put(API_VERSION, request_api_version);
         map.put(CORRELATION_ID, correlation_id);
+        map.put(REMAINING_BYTES, remainingBytes);
 
         return map;
     }

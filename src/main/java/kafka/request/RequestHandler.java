@@ -16,52 +16,44 @@ import static constants.Constants.MESSAGE_SIZE;
 import static constants.Constants.API_KEY;
 import static constants.Constants.REMAINING_BYTES;;
 
-
-
-
-public class RequestHandler  {
-
-
+public class RequestHandler {
 
     private Socket clientSocket;
 
-    public RequestHandler(Socket socket){
+    public RequestHandler(Socket socket) {
         this.clientSocket = socket;
     }
 
-    
+    public void handleRequest() {
 
-   public  void handleRequest() {
-    
-        
-    
-                        try {
+        try {
             while (!clientSocket.isClosed()) {
-            // From where we read the request
-            OutputStream out = clientSocket.getOutputStream();
-         InputStream in = clientSocket.getInputStream();
-      //We parse the input from the Input Stream
-      Map<String, byte[]> parseStreamMap = parseStream(in);
-      ByteBuffer.allocate(2);
-      short api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
+                // From where we read the request
+                OutputStream out = clientSocket.getOutputStream();
+                InputStream in = clientSocket.getInputStream();
+                // We parse the input from the Input Stream
+                Map<String, byte[]> parseStreamMap = parseStream(in);
+                ByteBuffer.allocate(2);
+                short api_version = ByteBuffer.wrap(parseStreamMap.get(API_VERSION)).getShort();
 
-      ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
+                ByteArrayOutputStream baos = get_response(parseStreamMap.get(CORRELATION_ID), api_version);
 
-      int message_size = baos.size();
-      byte[] response = baos.toByteArray();
+                int message_size = baos.size();
+                byte[] response = baos.toByteArray();
 
-      byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
-      out.write(size_byte);
-      out.write(response);
-      out.flush();
-       
-    } } catch (IOException e) {
-           
-        System.out.println("IOException: " + e.getMessage());
+                byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
+                out.write(size_byte);
+                out.write(response);
+                out.flush();
+
+            }
+        } catch (IOException e) {
+
+            System.out.println("IOException: " + e.getMessage());
+        }
     }
-    }
 
-     private static Map<String, byte[]> parseStream(InputStream in) throws IOException {
+    private Map<String, byte[]> parseStream(InputStream in) throws IOException {
 
         DataInputStream dataInputStream = new DataInputStream(in);
 
@@ -84,11 +76,12 @@ public class RequestHandler  {
         return map;
     }
 
-     /*
+    /*
      * Response for the ApiVersion 18 on V4
      * error_code [api_keys] throttle_time_ms TAG_BUFFER
+     * Response for the DescribeTopicPartitions
      */
-    private static ByteArrayOutputStream get_response(byte[] cId, short api_version) {
+    private ByteArrayOutputStream get_response(byte[] cId, short api_version) {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -96,17 +89,22 @@ public class RequestHandler  {
             if (api_version == 4) {
 
                 baos.write(cId);
-                baos.write(new byte[]{0, 0});
-                baos.write(2);
-                baos.write(new byte[]{0, 18});
-                baos.write(new byte[]{0, 0});
-                baos.write(new byte[]{0, 4});
+                baos.write(new byte[] { 0, 0 });
+                baos.write(3);
+                baos.write(new byte[] { 0, 18 });
+                baos.write(new byte[] { 0, 0 });
+                baos.write(new byte[] { 0, 4 });
                 baos.write(0);
-                baos.write(new byte[]{0, 0, 0, 0});
+                baos.write(new byte[] { 0, 75 });
+                baos.write(new byte[] { 0, 0 });
+                baos.write(new byte[] { 0, 0 });
                 baos.write(0);
+                baos.write(new byte[] { 0, 0, 0, 0 });
+                baos.write(0);
+
             } else {
                 baos.write(cId);
-                baos.write(new byte[]{0, 35});
+                baos.write(new byte[] { 0, 35 });
             }
 
         } catch (IOException e) {
@@ -116,5 +114,5 @@ public class RequestHandler  {
         return baos;
 
     }
-    
+
 }

@@ -12,9 +12,31 @@ import java.util.Map;
 
 import static constants.Constants.API_VERSION;
 import static constants.Constants.CORRELATION_ID;
+import static constants.Constants.DESCRIBETOPICPARTITIONS;
 import static constants.Constants.MESSAGE_SIZE;
+import static constants.Constants.APIVERSIONS;
 import static constants.Constants.API_KEY;
 import static constants.Constants.REMAINING_BYTES;;
+
+/**
+ * KAFKA REQUEST CONTENT
+ * - Message Size 4 bytes
+ * ↓ Request Header (v2)
+ * - API Key 2 bytes
+ * - API Version 2 bytes
+ * - Correlation ID 4 bytes
+ * ↓ Client ID
+ * - Length 2-byte integer indicating the length of the Client ID string
+ * - Contents encoded in UTF-8
+ * - Tag buffer
+ * → DescribeTopicPartitions Request Body (v0)
+ * ↓ Topics Array
+ * - Array Length
+ * → Topic
+ * - Topic Name Length
+ * - Topic Name
+ * - Topic Tag Buffer
+ */
 
 public class RequestHandler {
 
@@ -86,25 +108,18 @@ public class RequestHandler {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
-            if (api_version == 4) {
 
-                baos.write(cId);
-                baos.write(new byte[] { 0, 0 });
-                baos.write(3);
-                baos.write(new byte[] { 0, 18 });
-                baos.write(new byte[] { 0, 0 });
-                baos.write(new byte[] { 0, 4 });
-                baos.write(0);
-                baos.write(new byte[] { 0, 75 });
-                baos.write(new byte[] { 0, 0 });
-                baos.write(new byte[] { 0, 0 });
-                baos.write(0);
-                baos.write(new byte[] { 0, 0, 0, 0 });
-                baos.write(0);
-
-            } else {
-                baos.write(cId);
-                baos.write(new byte[] { 0, 35 });
+            switch (api_version) {
+                case APIVERSIONS:
+                    sendApiVersions(baos, cId);
+                    break;
+                case DESCRIBETOPICPARTITIONS:
+                    sendDescribeTopicPartitionsResponse(baos, cId);
+                    break;
+                default:
+                    baos.write(cId);
+                    baos.write(new byte[] { 0, 35 });
+                    break;
             }
 
         } catch (IOException e) {
@@ -113,6 +128,33 @@ public class RequestHandler {
 
         return baos;
 
+    }
+
+    void sendDescribeTopicPartitionsResponse(ByteArrayOutputStream baos, byte[] cId) throws IOException {
+
+        baos.write(cId);
+        baos.write(new byte[] { 0, 0 });
+        baos.write(0);
+        baos.write(new byte[] { 0, 0, 0, 0 });
+        baos.write(2);
+        baos.write(new byte[] { 0, 3 });
+        baos.write(new byte[] { 0, 0 });
+        baos.write(new byte[] { 0, 0 });
+        baos.write(0);
+
+    }
+
+    void sendApiVersions(ByteArrayOutputStream baos, byte[] cId) throws IOException {
+
+        baos.write(cId);
+        baos.write(new byte[] { 0, 0 });
+        baos.write(2);
+        baos.write(new byte[] { 0, 18 });
+        baos.write(new byte[] { 0, 0 });
+        baos.write(new byte[] { 0, 4 });
+        baos.write(0);
+        baos.write(new byte[] { 0, 0, 0, 0 });
+        baos.write(0);
     }
 
 }

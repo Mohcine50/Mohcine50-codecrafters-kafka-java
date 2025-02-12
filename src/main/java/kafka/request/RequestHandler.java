@@ -69,16 +69,7 @@ public class RequestHandler {
                 // We parse the input from the Input Stream
                 parseStream(in);
 
-                ByteArrayOutputStream baos = get_response();
-
-                int message_size = baos.size();
-
-                byte[] response = baos.toByteArray();
-
-                byte[] size_byte = ByteBuffer.allocate(4).putInt(message_size).array();
-                out.write(size_byte);
-                out.write(response);
-                out.flush();
+                sendResponse(out);
 
             }
         } catch (IOException e) {
@@ -106,39 +97,46 @@ public class RequestHandler {
 
         // Check if the request api version is for Desccribe topic partitions
         if (api_key == DESCRIBETOPICPARTITIONS) {
-            short length = dataInputStream.readShort();
-            byte[] content = dataInputStream.readNBytes(length);
+
+            // Client ID
+            short clientIdLengthShort = dataInputStream.readShort();
+            byte[] content = dataInputStream.readNBytes(clientIdLengthShort);
 
             dataInputStream.readNBytes(1); // tug buffer
 
+            // DescribeTopicPartitions Request Body (v0)
+            // Topics Array
+            // COMPACT_ARRAY: Array Length + 1
+            // Array Length
             byte[] topicArrayLength = dataInputStream.readNBytes(1);
+
+            // Topic
+            // The length of the topic name + 1
             byte[] topicNameLength = dataInputStream.readNBytes(1);
+            // Topic Name
             byte[] topicName = dataInputStream.readNBytes(topicNameLength[0] - 1);
 
             dataInputStream.readNBytes(1); // tug buffer
 
-            byte[] partitions = dataInputStream.readNBytes(4);
+            // Response Partition Limit
+            byte[] responsePartitionLimit = dataInputStream.readNBytes(4);
 
+            // Cursor
             byte[] cursor = dataInputStream.readNBytes(1);
+
             dataInputStream.readNBytes(1); // tug buffer
 
-            System.out.println("heressssssssssss 1");
             parseStreamMap.put(CONTENT, content);
-            System.out.println("heressssssssssss 2");
             parseStreamMap.put(TOPIC_ARRAY_LENGTH, topicArrayLength);
-            System.out.println("heressssssssssss 3");
             parseStreamMap.put(TOPIC_NAME_LENGTH, topicNameLength);
-            System.out.println("heressssssssssss 4");
             parseStreamMap.put(TOPIC_NAME, topicName);
-            System.out.println("heressssssssssss 5");
-            parseStreamMap.put(PARTITIONS, partitions);
-            System.out.println("heressssssssssss 6");
+            parseStreamMap.put(PARTITIONS, responsePartitionLimit);
             parseStreamMap.put(CURSOR, cursor);
 
-            System.out.println("heressssssssssss");
         }
         byte[] remainingBytes = new byte[dataInputStream.available()];
         dataInputStream.readFully(remainingBytes);
+
     }
 
     /*
@@ -146,68 +144,89 @@ public class RequestHandler {
      * error_code [api_keys] throttle_time_ms TAG_BUFFER
      * Response for the DescribeTopicPartitions
      */
-    private ByteArrayOutputStream get_response() {
+    private void sendResponse(OutputStream out) {
 
         short apiVersion = ByteBuffer.allocate(2).wrap((byte[]) parseStreamMap.get(API_VERSION)).getShort();
 
         short apiKey = ByteBuffer.allocate(2).wrap((byte[]) parseStreamMap.get(API_KEY)).getShort();
 
-        byte[] correlationId = parseStreamMap.get(CORRELATION_ID);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
         try {
-            baos.write(correlationId);
-
-            if (apiVersion < 0 || apiVersion > 4) {
+            if (apiVersion >= 0 && apiVersion <= 4) {
                 switch (apiKey) {
                     case APIVERSIONS:
-                        sendApiVersions(baos);
+                        sendApiVersions(out);
                         break;
                     case DESCRIBETOPICPARTITIONS:
-                        sendDescribeTopicPartitionsResponse(baos);
+                        sendDescribeTopicPartitionsResponse(out);
                         break;
                     default:
                         throw new Error("API KEY NOT SUPPORTED");
                 }
 
             } else {
-                baos.write(new byte[] { 0, 35 });
+                sendErrorCode(out);
             }
 
         } catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         }
 
-        return baos;
-
     }
 
-    void sendDescribeTopicPartitionsResponse(ByteArrayOutputStream baos)
+    void sendDescribeTopicPartitionsResponse(OutputStream out)
             throws IOException {
 
         byte[] topicNameLength = parseStreamMap.get(TOPIC_NAME_LENGTH);
         byte[] topicName = parseStreamMap.get(TOPIC_NAME);
         byte[] arrayLength = parseStreamMap.get(TOPIC_ARRAY_LENGTH);
+        byte[] correlationId = parseStreamMap.get(CORRELATION_ID);
 
-        baos.write(0); // tag buffer
-        baos.write(new byte[] { 0, 0, 0, 0 }); // throtels time
-        baos.write(arrayLength[0]); // tag buffer : Array length
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        // Correlation Id
+        baos.write(correlationId);
+        // tag buffer
+        baos.write(new byte[] { 0 });
+
+        // Throttle Time
+        baos.write(new byte[] { 0, 0, 0, 0 });
+
+        // Array Length : The length of the topics array + 1
+        baos.write(arrayLength);
+
+        // Error Code
         baos.write(new byte[] { 0, 3 });
-        baos.write(topicNameLength[0]);
+        // Topic Name Length
+        baos.write(topicNameLength);
+        // Topic Name Content
         baos.write(topicName);
+        // Topic ID
         baos.write(new byte[16]);
-        baos.write(0);
-        baos.write(2);
-        baos.write(new byte[] { 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0 });
-        baos.write(0);
+        // Is Internal
+        baos.write(new byte[] { 0 });
+        // Partitions Array
+        baos.write(new byte[] { 1 });
+        // Topic Authorized Operations
+        baos.write(new byte[] { 0, 0, (byte) 0x0d, (byte) 0xf8 });
+        baos.write(new byte[] { 0 });
         baos.write(0xFF);
-        baos.write(0);
+        baos.write(new byte[] { 0 });
+
+        int size = baos.size();
+        out.write(ByteBuffer.allocate(4).putInt(size).array());
+        out.write(baos.toByteArray());
+        out.flush();
 
     }
 
-    void sendApiVersions(ByteArrayOutputStream baos) throws IOException {
+    void sendApiVersions(OutputStream out) throws IOException {
 
+        byte[] correlationId = parseStreamMap.get(CORRELATION_ID);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        // Correlation Id
+        baos.write(correlationId);
         baos.write(new byte[] { 0, 0 });
         baos.write(3);
         baos.write(new byte[] { 0, 18 });
@@ -220,6 +239,24 @@ public class RequestHandler {
         baos.write(0);
         baos.write(new byte[] { 0, 0, 0, 0 });
         baos.write(0);
+
+        int size = baos.size();
+        out.write(ByteBuffer.allocate(4).putInt(size).array());
+        out.write(baos.toByteArray());
+        out.flush();
+    }
+
+    void sendErrorCode(OutputStream out) throws IOException {
+
+        byte[] correlationId = parseStreamMap.get(CORRELATION_ID);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+        bos.write(correlationId);
+        bos.write(new byte[] { 0, (byte) 35 });
+        int size = bos.size();
+        out.write(ByteBuffer.allocate(4).putInt(size).array());
+        out.write(bos.toByteArray());
+        out.flush();
     }
 
 }

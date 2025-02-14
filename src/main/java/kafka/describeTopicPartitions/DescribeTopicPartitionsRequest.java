@@ -8,11 +8,10 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.HexFormat;
-import java.util.Map;
 
-import static constants.Constants.KAFKA_METADATA_CLUSTER_LOG_FILE_PATH;
+import static lib.Constants.KAFKA_METADATA_CLUSTER_LOG_FILE_PATH;
+import static lib.Utils.readVarintBytes;
 
 /**
  * KAFKA REQUEST CONTENT
@@ -37,7 +36,6 @@ import static constants.Constants.KAFKA_METADATA_CLUSTER_LOG_FILE_PATH;
 public class DescribeTopicPartitionsRequest extends KafkaRequest implements RequestInterface {
 
     private Socket clientSocket;
-    private Map<String, byte[]> parseStreamMap = new HashMap<>();
 
     private byte[] content;
     private byte[] topicName;
@@ -48,11 +46,12 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
     private byte[] partitionTopicName;
     private byte[] partitionIndex;
     private byte[] partitionTopicNameLength;
-
+    private KafkaRecordBatch kafkaRecordBatch;
 
     public DescribeTopicPartitionsRequest() {
         super();
     }
+
 
     @Override
     public void handleRequest() {
@@ -117,6 +116,60 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         InputStream in = getMetaDataLogFileInputStream();
         System.out.println("AVAILABLE META-DATA CLUSTER: " + in.available());
         System.out.println("HEX" + HexFormat.of().formatHex(in.readAllBytes()));
+
+        kafkaRecordBatch = new KafkaRecordBatch.Builder()
+                // - Base Offset: 8 bytes
+                .setBaseOffset(in.readNBytes(8))
+                // - Batch Length: 4 bytes
+                .setBatchLength(in.readNBytes(4))
+                // - Partition Leader Epoch: 4 bytes
+                .setPartitionLeaderEpoch(in.readNBytes(4))
+                // - Magic Byte: 1 byte
+                .setMagicByte(in.readNBytes(1))
+                // - CRC: 4 bytes
+                .setCrc(in.readNBytes(4))
+                // - Attributes: 2 bytes
+                .setAttributes(in.readNBytes(2))
+                // - Last Offset Delta: 4 bytes
+                .setLastOffsetDelta(in.readNBytes(4))
+                // - Base Timestamp: 8 bytes
+                .setBaseTimestamp(in.readNBytes(8))
+                // - Max Timestamp: 8 bytes
+                .setMaxTimestamp(in.readNBytes(8))
+                // - Producer ID: 8 bytes
+                .setProducerId(in.readNBytes(8))
+                // - Producer Epoch: 2 bytes
+                .setProducerEpoch(in.readNBytes(2))
+                // - Base Sequence: 4 bytes
+                .setBaseSequence(in.readNBytes(2))
+                // - Records Length: Records Length is a 4-byte big-endian integer indicating the number of records in this batch.
+                .setRecordsLength(in.readNBytes(4))
+                .setRecords(()->{
+
+                    KafkaRecord kafkaRecord = new KafkaRecord.Builder()
+                            .setLength(readVarintBytes(in))
+                            .setAttributes(in.readNBytes(1))
+                            .setTimestampDelta(readVarintBytes(in))
+                            .setOffsetDelta(readVarintBytes(in))
+                            .setKeyLength(readVarintBytes(in))
+                            .setKey(null)
+                            .setValueLength(readVarintBytes(in))
+                            .setValue(()->{
+                                KafkaRecordValue kafkaRecordValue = new KafkaRecordValue.Builder()
+                                        .setFrameVersion(in.readNBytes(1))
+                                        .setType(in.readNBytes(1))
+                                        .setVersion(in.readNBytes(1))
+                                        .setNameLength(readVarintBytes(in))
+                                        .setTopicName(kafkaRecordValue.)
+                            })
+
+                })
+                .build(); // Still messing the records
+
+    }
+
+    public KafkaRecordBatch getKafkaRecordBatch() {
+        return kafkaRecordBatch;
     }
 
     public byte[] getPartitionTopicName() {

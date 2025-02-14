@@ -1,5 +1,7 @@
 package kafka.describeTopicPartitions;
 
+import java.util.ArrayList;
+
 public class KafkaRecordBatch {
 
     private byte[] baseOffset;
@@ -15,7 +17,7 @@ public class KafkaRecordBatch {
     private byte[] producerEpoch;
     private byte[] baseSequence;
     private byte[] recordsLength;
-    private KafkaRecord Record;
+    private ArrayList<KafkaRecord> records;
 
     public byte[] getBaseOffset() {
         return baseOffset;
@@ -121,12 +123,12 @@ public class KafkaRecordBatch {
         this.recordsLength = recordsLength;
     }
 
-    public KafkaRecord getRecord() {
-        return Record;
+    public ArrayList<KafkaRecord> getRecords() {
+        return records;
     }
 
-    public void setRecord(KafkaRecord record) {
-        Record = record;
+    public void setRecords(ArrayList<KafkaRecord> records) {
+        this.records = records;
     }
 
 
@@ -144,7 +146,7 @@ public class KafkaRecordBatch {
         private byte[] producerEpoch;
         private byte[] baseSequence;
         private byte[] recordsLength;
-        private KafkaRecord record;
+        private ArrayList<KafkaRecord> records;
 
         public Builder setBaseOffset(byte[] baseOffset) {
             this.baseOffset = baseOffset;
@@ -211,8 +213,8 @@ public class KafkaRecordBatch {
             return this;
         }
 
-        public Builder setRecord(KafkaRecord record) {
-            this.record = record;
+        public Builder setRecords(ArrayList<KafkaRecord> records) {
+            this.records = records;
             return this;
         }
 
@@ -231,7 +233,7 @@ public class KafkaRecordBatch {
             kafkaRecordBatch.setProducerEpoch(this.producerEpoch);
             kafkaRecordBatch.setBaseSequence(this.baseSequence);
             kafkaRecordBatch.setRecordsLength(this.recordsLength);
-            kafkaRecordBatch.setRecord(this.record);
+            kafkaRecordBatch.setRecords(this.records);
             return kafkaRecordBatch;
         }
     }

@@ -1,4 +1,4 @@
-package constants;
+package lib;
 
 public final class Constants {
 
@@ -9,6 +9,10 @@ public final class Constants {
 
     public final static short APIVERSIONS = 18;
     public final static short DESCRIBETOPICPARTITIONS = 75;
+
+    public final static short FEATURE_LEVEL = 3;
+    public final static short TOPIC_LEVEL = 2;
+    public final static short PARTITION_LEVEL = 12;
 
     public final static String LENGTH = "MESSAGE_SIZE";
     public final static String CONTENT = "CONTENT";

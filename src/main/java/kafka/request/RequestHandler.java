@@ -7,8 +7,8 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
-import static constants.Constants.APIVERSIONS;
-import static constants.Constants.DESCRIBETOPICPARTITIONS;
+import static lib.Constants.APIVERSIONS;
+import static lib.Constants.DESCRIBETOPICPARTITIONS;
 
 
 public class RequestHandler {

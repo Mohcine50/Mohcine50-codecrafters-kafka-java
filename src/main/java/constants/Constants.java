@@ -23,4 +23,7 @@ public final class Constants {
 
     public final static byte UNKNOWN_TOPIC_OR_PARTITION = 3;
 
+
+    public final static String KAFKA_METADATA_CLUSTER_LOG_FILE_PATH = "/tmp/kraft-combined-logs/__cluster_metadata-0/00000000000000000000.log";
+
 }

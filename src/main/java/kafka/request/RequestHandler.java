@@ -143,6 +143,7 @@ public class RequestHandler {
                         break;
                     case DESCRIBETOPICPARTITIONS:
                         describeTopicPartitionsRequest.sendResponse(out);
+                        describeTopicPartitionsRequest.handleKafkaMetaDataCluster();
                         break;
                     default:
                         throw new Error("API KEY NOT SUPPORTED");

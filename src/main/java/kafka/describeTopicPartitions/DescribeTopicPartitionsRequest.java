@@ -4,14 +4,15 @@ import kafka.apiVersion.ApiVersionRequest;
 import kafka.request.KafkaRequest;
 import kafka.request.RequestInterface;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
+
+import static constants.Constants.KAFKA_METADATA_CLUSTER_LOG_FILE_PATH;
 
 /**
  * KAFKA REQUEST CONTENT
@@ -48,44 +49,9 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
     private byte[] partitionIndex;
     private byte[] partitionTopicNameLength;
 
+
     public DescribeTopicPartitionsRequest() {
         super();
-    }
-
-    public byte[] getPartitionTopicName() {
-        return partitionTopicName;
-    }
-
-    public byte[] getPartitionIndex() {
-        return partitionIndex;
-    }
-
-    public byte[] getPartitionTopicNameLength() {
-        return partitionTopicNameLength;
-    }
-
-    public byte[] getContent() {
-        return content;
-    }
-
-    public byte[] getTopicArrayLength() {
-        return topicArrayLength;
-    }
-
-    public byte[] getPartitionLimits() {
-        return partitionLimits;
-    }
-
-    public byte[] getCursor() {
-        return cursor;
-    }
-
-    public byte[] getTopicNameLength() {
-        return topicNameLength;
-    }
-
-    public byte[] getTopicName() {
-        return topicName;
     }
 
     @Override
@@ -136,6 +102,59 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         out.write(baos.toByteArray());
         out.flush();
     }
+
+    InputStream getMetaDataLogFileInputStream() throws FileNotFoundException {
+
+        Path path = Path.of(KAFKA_METADATA_CLUSTER_LOG_FILE_PATH);
+
+        System.out.println("Path: " + path);
+
+        return new FileInputStream(path.toFile());
+    }
+
+    public void handleKafkaMetaDataCluster() throws IOException {
+
+        InputStream in = getMetaDataLogFileInputStream();
+        System.out.println("AVAILABLE META-DATA CLUSTER: " + in.available());
+        System.out.println("HEX" + HexFormat.of().formatHex(in.readAllBytes()));
+    }
+
+    public byte[] getPartitionTopicName() {
+        return partitionTopicName;
+    }
+
+    public byte[] getPartitionIndex() {
+        return partitionIndex;
+    }
+
+    public byte[] getPartitionTopicNameLength() {
+        return partitionTopicNameLength;
+    }
+
+    public byte[] getContent() {
+        return content;
+    }
+
+    public byte[] getTopicArrayLength() {
+        return topicArrayLength;
+    }
+
+    public byte[] getPartitionLimits() {
+        return partitionLimits;
+    }
+
+    public byte[] getCursor() {
+        return cursor;
+    }
+
+    public byte[] getTopicNameLength() {
+        return topicNameLength;
+    }
+
+    public byte[] getTopicName() {
+        return topicName;
+    }
+
 
     public static class Builder extends KafkaRequest.Builder<Builder> {
         private final DescribeTopicPartitionsRequest request;

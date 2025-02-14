@@ -142,6 +142,7 @@ public class RequestHandler {
                         versionRequest.sendResponse(out);
                         break;
                     case DESCRIBETOPICPARTITIONS:
+                        System.out.println("describeTopicPartitionsRequest");
                         describeTopicPartitionsRequest.sendResponse(out);
                         describeTopicPartitionsRequest.handleKafkaMetaDataCluster();
                         break;

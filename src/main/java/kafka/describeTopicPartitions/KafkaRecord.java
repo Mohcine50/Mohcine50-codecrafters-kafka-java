@@ -1,13 +1,13 @@
 package kafka.describeTopicPartitions;
 
 public class KafkaRecord {
-    private byte[] length;
+    private int length;
     private byte[] attributes;
-    private byte[] timestampDelta;
-    private byte[] offsetDelta;
-    private byte[] keyLength;
+    private int timestampDelta;
+    private int offsetDelta;
+    private int keyLength;
     private byte[] key;
-    private byte[] valueLength;
+    private int valueLength;
     private KafkaRecordValue value; // Topic Record
     private byte[] headersArrayCount;
 
@@ -27,11 +27,11 @@ public class KafkaRecord {
         this.value = value;
     }
 
-    public byte[] getValueLength() {
+    public int getValueLength() {
         return valueLength;
     }
 
-    public void setValueLength(byte[] valueLength) {
+    public void setValueLength(int valueLength) {
         this.valueLength = valueLength;
     }
 
@@ -43,27 +43,27 @@ public class KafkaRecord {
         this.key = key;
     }
 
-    public byte[] getKeyLength() {
+    public int getKeyLength() {
         return keyLength;
     }
 
-    public void setKeyLength(byte[] keyLength) {
+    public void setKeyLength(int keyLength) {
         this.keyLength = keyLength;
     }
 
-    public byte[] getOffsetDelta() {
+    public int getOffsetDelta() {
         return offsetDelta;
     }
 
-    public void setOffsetDelta(byte[] offsetDelta) {
+    public void setOffsetDelta(int offsetDelta) {
         this.offsetDelta = offsetDelta;
     }
 
-    public byte[] getTimestampDelta() {
+    public int getTimestampDelta() {
         return timestampDelta;
     }
 
-    public void setTimestampDelta(byte[] timestampDelta) {
+    public void setTimestampDelta(int timestampDelta) {
         this.timestampDelta = timestampDelta;
     }
 
@@ -75,26 +75,26 @@ public class KafkaRecord {
         this.attributes = attributes;
     }
 
-    public byte[] getLength() {
+    public int getLength() {
         return length;
     }
 
-    public void setLength(byte[] length) {
+    public void setLength(int length) {
         this.length = length;
     }
 
     public static class Builder {
-        private byte[] length;
+        private int length;
         private byte[] attributes;
-        private byte[] timestampDelta;
-        private byte[] offsetDelta;
-        private byte[] keyLength;
+        private int timestampDelta;
+        private int offsetDelta;
+        private int keyLength;
         private byte[] key;
-        private byte[] valueLength;
+        private int valueLength;
         private KafkaRecordValue value;
         private byte[] headersArrayCount;
 
-        public Builder setLength(byte[] length) {
+        public Builder setLength(int length) {
             this.length = length;
             return this;
         }
@@ -104,17 +104,17 @@ public class KafkaRecord {
             return this;
         }
 
-        public Builder setTimestampDelta(byte[] timestampDelta) {
+        public Builder setTimestampDelta(int timestampDelta) {
             this.timestampDelta = timestampDelta;
             return this;
         }
 
-        public Builder setOffsetDelta(byte[] offsetDelta) {
+        public Builder setOffsetDelta(int offsetDelta) {
             this.offsetDelta = offsetDelta;
             return this;
         }
 
-        public Builder setKeyLength(byte[] keyLength) {
+        public Builder setKeyLength(int keyLength) {
             this.keyLength = keyLength;
             return this;
         }
@@ -124,7 +124,7 @@ public class KafkaRecord {
             return this;
         }
 
-        public Builder setValueLength(byte[] valueLength) {
+        public Builder setValueLength(int valueLength) {
             this.valueLength = valueLength;
             return this;
         }

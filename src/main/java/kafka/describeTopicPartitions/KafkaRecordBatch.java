@@ -19,6 +19,7 @@ public class KafkaRecordBatch {
     private byte[] recordsLength;
     private ArrayList<KafkaRecord> records;
 
+
     public byte[] getBaseOffset() {
         return baseOffset;
     }
@@ -147,6 +148,7 @@ public class KafkaRecordBatch {
         private byte[] baseSequence;
         private byte[] recordsLength;
         private ArrayList<KafkaRecord> records;
+
 
         public Builder setBaseOffset(byte[] baseOffset) {
             this.baseOffset = baseOffset;

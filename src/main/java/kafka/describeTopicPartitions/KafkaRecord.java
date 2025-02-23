@@ -9,13 +9,13 @@ public class KafkaRecord {
     private byte[] key;
     private int valueLength;
     private KafkaRecordValue value; // Topic Record
-    private byte[] headersArrayCount;
+    private int headersArrayCount;
 
-    public byte[] getHeadersArrayCount() {
+    public int getHeadersArrayCount() {
         return headersArrayCount;
     }
 
-    public void setHeadersArrayCount(byte[] headersArrayCount) {
+    public void setHeadersArrayCount(int headersArrayCount) {
         this.headersArrayCount = headersArrayCount;
     }
 
@@ -92,10 +92,11 @@ public class KafkaRecord {
         private byte[] key;
         private int valueLength;
         private KafkaRecordValue value;
-        private byte[] headersArrayCount;
+        private int headersArrayCount;
 
         public Builder setLength(int length) {
             this.length = length;
+
             return this;
         }
 
@@ -134,7 +135,7 @@ public class KafkaRecord {
             return this;
         }
 
-        public Builder setHeadersArrayCount(byte[] headersArrayCount) {
+        public Builder setHeadersArrayCount(int headersArrayCount) {
             this.headersArrayCount = headersArrayCount;
             return this;
         }

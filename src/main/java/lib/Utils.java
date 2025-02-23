@@ -1,40 +1,54 @@
 package lib;
 
-import java.io.EOFException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class Utils {
 
-    public static int readVarint(InputStream in) throws IOException {
+    public static int readUnsignedVarint(InputStream input) throws IOException {
         int value = 0;
-        int shift = 0;
+        int i = 0;
         int b;
-
-        while (true) {
-            b = in.read();
+        while (((b = input.read()) & 0x80) != 0) {
             if (b == -1) {
-                throw new EOFException("Unexpected end of stream");
+                throw new IOException("Unexpected end of stream");
             }
-
-            // Add the lower 7 bits of the byte to the value
-            value |= (b & 0x7F) << shift;
-
-            // If the MSB is 0, this is the last byte
-            if ((b & 0x80) == 0) {
-                break;
-            }
-
-            // Shift by 7 bits for the next byte
-            shift += 7;
-
-            // Prevent overflow (Varints are typically limited to 32 or 64 bits)
-            if (shift >= 32) {
-                throw new IOException("Varint too large");
-            }
+            value |= (b & 0x7f) << i;
+            i += 7;
+            if (i > 28)
+                throw illegalVarintException(value);
         }
-
+        value |= b << i;
         return value;
     }
 
+
+    private static IllegalArgumentException illegalVarintException(int value) {
+        throw new IllegalArgumentException("Varint is too long, the most significant bit in the 5th byte is set, " +
+                "converted value: " + Integer.toHexString(value));
+    }
+
+    public static int getUnsignedVarInt(InputStream inputStream) throws IOException {
+        return readUnsignedVarint(inputStream);
+    }
+
+    public static int getSignedVarInt(InputStream inputStream) throws IOException {
+        int value = readUnsignedVarint(inputStream);
+        return (value >>> 1) ^ -(value & 1);
+    }
+
+    public static byte[] writeUnsignedVarint(int value) throws IOException {
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        while ((value & 0xffffff80) != 0L) {
+            byte b = (byte) ((value & 0x7f) | 0x80);
+            outputStream.write(b);
+            value >>>= 7;
+        }
+        outputStream.write((byte) value);
+
+        return outputStream.toByteArray();
+    }
 }

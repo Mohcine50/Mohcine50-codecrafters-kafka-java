@@ -157,66 +157,79 @@ public class KafkaRecordBatch {
 
         public Builder setBatchLength(byte[] batchLength) {
             this.batchLength = batchLength;
+
             return this;
         }
 
         public Builder setPartitionLeaderEpoch(byte[] partitionLeaderEpoch) {
             this.partitionLeaderEpoch = partitionLeaderEpoch;
+
             return this;
         }
 
         public Builder setMagicByte(byte[] magicByte) {
             this.magicByte = magicByte;
+
             return this;
         }
 
         public Builder setCrc(byte[] crc) {
             this.crc = crc;
+
             return this;
         }
 
         public Builder setAttributes(byte[] attributes) {
             this.attributes = attributes;
+
             return this;
         }
 
         public Builder setLastOffsetDelta(byte[] lastOffsetDelta) {
             this.lastOffsetDelta = lastOffsetDelta;
+
             return this;
         }
 
         public Builder setBaseTimestamp(byte[] baseTimestamp) {
             this.baseTimestamp = baseTimestamp;
+
             return this;
         }
 
         public Builder setMaxTimestamp(byte[] maxTimestamp) {
             this.maxTimestamp = maxTimestamp;
+
             return this;
         }
 
         public Builder setProducerId(byte[] producerId) {
             this.producerId = producerId;
+
             return this;
         }
 
         public Builder setProducerEpoch(byte[] producerEpoch) {
             this.producerEpoch = producerEpoch;
+
             return this;
         }
 
         public Builder setBaseSequence(byte[] baseSequence) {
             this.baseSequence = baseSequence;
+
             return this;
         }
 
         public Builder setRecordsLength(byte[] recordsLength) {
             this.recordsLength = recordsLength;
+
             return this;
         }
 
         public Builder setRecords(ArrayList<KafkaRecord> records) {
             this.records = records;
+
             return this;
         }
 

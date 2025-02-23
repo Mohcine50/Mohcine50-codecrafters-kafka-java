@@ -14,6 +14,7 @@ public class PartitionRecordValue extends KafkaRecordValue {
     private final byte[] leaderEpoch;
     private final byte[] partitionEpoch;
     private final byte[] directoriesArray;
+    private int directoriesArrayLength;
 
     private PartitionRecordValue(Builder builder) {
         super(builder);
@@ -30,6 +31,15 @@ public class PartitionRecordValue extends KafkaRecordValue {
         this.replicationLength = builder.replicaArrayLength;
         this.inSyncReplicaArrayLength = builder.inSyncReplicaArrayLength;
         this.removingReplicasArrayLength = builder.removingReplicasArrayLength;
+        this.directoriesArrayLength = builder.directoriesArrayLength;
+    }
+
+    public int getDirectoriesArrayLength() {
+        return directoriesArrayLength;
+    }
+
+    public void setDirectoriesArrayLength(int directoriesArrayLength) {
+        this.directoriesArrayLength = directoriesArrayLength;
     }
 
     public byte[] getDirectoriesArray() {
@@ -98,6 +108,12 @@ public class PartitionRecordValue extends KafkaRecordValue {
         private int replicaArrayLength;
         private int inSyncReplicaArrayLength;
         private int removingReplicasArrayLength;
+        private int directoriesArrayLength;
+
+        public Builder directoriesArrayLength(int directoriesArrayLength) {
+            this.directoriesArrayLength = directoriesArrayLength;
+            return this;
+        }
 
         public Builder removingReplicasArrayLength(int removingReplicasArrayLength) {
             this.removingReplicasArrayLength = removingReplicasArrayLength;

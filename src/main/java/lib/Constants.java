@@ -5,11 +5,11 @@ public final class Constants {
     public final static short APIVERSIONS = 18;
     public final static short DESCRIBETOPICPARTITIONS = 75;
 
-    public final static short FEATURE_LEVEL = 3;
-    public final static short TOPIC_LEVEL = 2;
-    public final static short PARTITION_LEVEL = 12;
+    public final static byte FEATURE_LEVEL = 12;
+    public final static byte TOPIC_LEVEL = 2;
+    public final static byte PARTITION_LEVEL = 3;
 
-   
+
     public final static byte UNKNOWN_TOPIC_OR_PARTITION = 3;
 
 

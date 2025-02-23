@@ -1,6 +1,7 @@
 package kafka.request;
 
 import kafka.apiVersion.ApiVersionRequest;
+import kafka.describeTopicPartitions.Cursor;
 import kafka.describeTopicPartitions.DescribeTopicPartitionsRequest;
 
 import java.io.*;
@@ -88,34 +89,20 @@ public class RequestHandler {
             byte[] responsePartitionLimit = dataInputStream.readNBytes(4);
 
             // Cursor
-            byte[] cursor = dataInputStream.readNBytes(1);
+            Cursor cursor = Cursor.New(in);
 
-
-            byte[] partitionTopicNameLength = null;
-            byte[] partitionTopicName = null;
-            byte[] partitionIndex = null;
-
-            if (dataInputStream.available() > 1) {
-                // Topic partition name Length
-                partitionTopicNameLength = dataInputStream.readNBytes(1);
-                // topic_name => COMPACT_STRING
-                partitionTopicName = dataInputStream.readNBytes(partitionTopicNameLength[0] - 1);
-                // partition_index => INT32
-                partitionIndex = dataInputStream.readNBytes(4);
-                dataInputStream.readNBytes(1); // tug buffer
-            }
             dataInputStream.readNBytes(1);
 
             describeTopicPartitionsRequest = new DescribeTopicPartitionsRequest.Builder()
                     .from(versionRequest)
                     .setContent(content)
                     .setArrayLength(topicArrayLength)
-                    .setPartitionTopicName(partitionTopicName)
-                    .setPartitionTopicNameLength(partitionTopicNameLength)
+                    .setPartitionTopicName(cursor.getName())
+                    //.setPartitionTopicNameLength(cursor.getLength())
                     .setTopicNameLength(topicNameLength)
                     .setTopicName(topicName)
                     .setCursor(cursor)
-                    .setPartitionIndex(partitionIndex)
+                    .setPartitionIndex(cursor.getPartitionId())
                     .setPartitionLimits(responsePartitionLimit)
                     .build();
         }
@@ -144,7 +131,7 @@ public class RequestHandler {
                     case DESCRIBETOPICPARTITIONS:
                         System.out.println("describeTopicPartitionsRequest");
                         describeTopicPartitionsRequest.sendResponse(out);
-                        describeTopicPartitionsRequest.handleKafkaMetaDataCluster();
+                        //describeTopicPartitionsRequest.handleKafkaMetaDataCluster();
                         break;
                     default:
                         throw new Error("API KEY NOT SUPPORTED");

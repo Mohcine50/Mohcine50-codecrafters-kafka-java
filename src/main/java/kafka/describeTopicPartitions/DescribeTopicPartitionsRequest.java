@@ -7,6 +7,7 @@ import kafka.request.RequestInterface;
 import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -38,15 +39,14 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
     private Socket clientSocket;
 
     private byte[] content;
-    private byte[] topicName;
-    private byte[] topicNameLength;
-    private byte[] topicArrayLength;
+    private byte[] topicsArrayLength;
     private byte[] partitionLimits;
     private Cursor cursor;
     private byte[] partitionTopicName;
     private byte[] partitionIndex;
     private Integer partitionTopicNameLength;
     private List<KafkaRecordBatch> kafkaRecordBatches;
+    private List<CompactString> topics;
 
     public DescribeTopicPartitionsRequest() {
         super();
@@ -70,8 +70,6 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         this.kafkaRecordBatches = handleKafkaMetaDataCluster();
 
 
-        var topicUUID = getTopicUUID(kafkaRecordBatches).get();
-
         // Correlation Id
         baos.write(this.getCorrelationId());
         // tag buffer
@@ -81,37 +79,63 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         baos.write(new byte[]{0, 0, 0, 0});
 
         // Array Length : The length of the topics array + 1
-        baos.write(writeUnsignedVarint(ByteBuffer.wrap(topicArrayLength).get()));
+        byte topicsArraysL = ByteBuffer.wrap(topicsArrayLength).get();
+        baos.write(writeUnsignedVarint(topicsArraysL));
+        for (byte i = 0; i < topicsArraysL - 1; i++) {
+            var topic = topics.get(i);
 
-        // Error Code: Error COde for partition
-        baos.write(new byte[]{0, 0});
-        // Topic Name Length
-        baos.write(ByteBuffer.wrap(topicNameLength).get());
-        // Topic Name Content
-        baos.write(topicName);
-        // Topic ID
-        baos.write(topicUUID);
-        // Is Internal
-        baos.write(new byte[]{0});
-        // Partitions Array
-        var partitions = getPartitionsArrayForTopic(topicUUID, kafkaRecordBatches);
-        byte partitionsSize = (byte) partitions.size();
-        System.out.println("number of partitions: " + partitions.size() + " " + (byte) (partitionsSize + 1));
+            var topicUUID = getTopicUUID(kafkaRecordBatches, topic.getValue());
 
-        baos.write(writeUnsignedVarint(partitionsSize + 1));
-        for (int i = 0; i < partitionsSize; i++) {
-            baos.write(new byte[]{0, 0});
-            baos.write(partitions.get(i).getPartitionId());
-            baos.write(partitions.get(i).getLeader());
-            baos.write(partitions.get(i).getLeaderEpoch());
-            baos.write(partitions.get(i).getReplicationLength());
-            baos.write(partitions.get(i).getReplicaArray());
-            baos.write(partitions.get(i).getInSyncReplicaArrayLength());
-            baos.write(partitions.get(i).getInSyncReplicaArray());
-            baos.write(partitions.get(i).getAddingReplicasCount());
-            //baos.write(partitions.get(i).);
-            baos.write(0);
+            if (topicUUID.isPresent()) {
+                // Error Code: Error COde for partition
+                baos.write(new byte[]{0, 0});
+                // Topic Name Length
+                baos.write((byte) topic.getValue().length + 1);
+                // Topic Name Content
+
+                baos.write(topic.getValue());
+                // Topic ID
+                baos.write(topicUUID.get());
+                // Is Internal
+                baos.write(new byte[]{0});
+                // Partitions Array
+                var partitions = getPartitionsArrayForTopic(topicUUID.get(), kafkaRecordBatches);
+                byte partitionsSize = (byte) partitions.size();
+                System.out.println("number of partitions: " + partitions.size() + " " + (byte) (partitionsSize + 1));
+
+                baos.write(writeUnsignedVarint(partitionsSize + 1));
+                for (int j = 0; j < partitionsSize; j++) {
+                    baos.write(new byte[]{0, 0});
+                    baos.write(partitions.get(j).getPartitionId());
+                    baos.write(new byte[]{0, 0, 0, 1});
+                    baos.write(new byte[]{0, 0, 0, 0});
+                    baos.write(new byte[]{2});
+                    baos.write(new byte[]{0, 0, 0, 1});
+                    baos.write(new byte[]{2});
+                    baos.write(new byte[]{0, 0, 0, 1});
+                    baos.write((byte) 1); // Eligible Leader Replicas (empty)
+                    baos.write((byte) 1); // Last Known ELR (empty)
+                    baos.write((byte) 1); // Offline Replicas (empty)
+                    baos.write((byte) 0);
+                }
+            } else {
+                System.out.println("Topic not found: " + new String(topic.getValue(), StandardCharsets.UTF_8));
+
+                baos.write(new byte[]{0, 3});
+                // Topic Name Length
+                baos.write((byte) topic.getValue().length + 1);
+                // Topic Name Content
+                baos.write(topic.getValue());
+                baos.write(new byte[16]);
+                // Topic Name Content
+                baos.write((byte) 0); // isInternal
+                baos.write((byte) 1); // partitionArrayLength
+            }
+
+
         }
+
+
         // Topic Authorized Operations
         baos.write(new byte[]{0, 0, (byte) 0x0d, (byte) 0xf8});
         baos.write(0);
@@ -150,15 +174,13 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
     }
 
 
-    private Optional<byte[]> getTopicUUID(List<KafkaRecordBatch> batches) {
+    private Optional<byte[]> getTopicUUID(List<KafkaRecordBatch> batches, byte[] topicName) {
         return batches.stream()
                 .flatMap(batch -> batch.getRecords().stream())
                 .map(KafkaRecord::getValue)
                 .filter(val -> val instanceof TopicRecordValue)
                 .map(val -> (TopicRecordValue) val)
-                .filter(topicRecord -> {
-                    return Arrays.equals(topicRecord.getTopicName(), topicName);
-                })
+                .filter(topicRecord -> Arrays.equals(topicRecord.getTopicName(), topicName))
                 .map(TopicRecordValue::getTopicUUID)
                 .findFirst();
     }
@@ -267,8 +289,8 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         return content;
     }
 
-    public byte[] getTopicArrayLength() {
-        return topicArrayLength;
+    public byte[] getTopicsArrayLength() {
+        return topicsArrayLength;
     }
 
     public byte[] getPartitionLimits() {
@@ -279,12 +301,9 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         return cursor;
     }
 
-    public byte[] getTopicNameLength() {
-        return topicNameLength;
-    }
 
-    public byte[] getTopicName() {
-        return topicName;
+    public List<CompactString> getTopicsArray() {
+        return topics;
     }
 
 
@@ -296,18 +315,14 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
             this.request = (DescribeTopicPartitionsRequest) this.kafkaRequest;
         }
 
-        public Builder setTopicNameLength(byte[] topicNameLength) {
-            request.topicNameLength = topicNameLength;
+        public Builder setTopicsArray(List<CompactString> topics) {
+            request.topics = topics;
             return this;
         }
 
-        public Builder setTopicName(byte[] topicName) {
-            request.topicName = topicName;
-            return this;
-        }
 
-        public Builder setArrayLength(byte[] arrayLength) {
-            request.topicArrayLength = arrayLength;
+        public Builder setTopicsArrayLength(byte[] arrayLength) {
+            request.topicsArrayLength = arrayLength;
             return this;
         }
 

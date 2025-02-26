@@ -1,12 +1,15 @@
 package kafka.request;
 
 import kafka.apiVersion.ApiVersionRequest;
+import kafka.describeTopicPartitions.CompactString;
 import kafka.describeTopicPartitions.Cursor;
 import kafka.describeTopicPartitions.DescribeTopicPartitionsRequest;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static lib.Constants.APIVERSIONS;
 import static lib.Constants.DESCRIBETOPICPARTITIONS;
@@ -79,11 +82,14 @@ public class RequestHandler {
 
             // Topic
             // The length of the topic name + 1
-            byte[] topicNameLength = dataInputStream.readNBytes(1);
-            // Topic Name
-            byte[] topicName = dataInputStream.readNBytes(topicNameLength[0] - 1);
-
-            dataInputStream.readNBytes(1); // tug buffer
+            List<CompactString> topics = new ArrayList<>();
+            for (byte i = 0; i < ByteBuffer.wrap(topicArrayLength).get() - 1; i++) {
+                // Topic Name Length
+                byte[] topicNameLength = dataInputStream.readNBytes(1);
+                // Topic Name
+                topics.add(CompactString.from(in, ByteBuffer.wrap(topicNameLength).get()));
+                dataInputStream.readNBytes(1); // tug buffer
+            }
 
             // Response Partition Limit
             byte[] responsePartitionLimit = dataInputStream.readNBytes(4);
@@ -96,11 +102,10 @@ public class RequestHandler {
             describeTopicPartitionsRequest = new DescribeTopicPartitionsRequest.Builder()
                     .from(versionRequest)
                     .setContent(content)
-                    .setArrayLength(topicArrayLength)
+                    .setTopicsArrayLength(topicArrayLength)
                     .setPartitionTopicName(cursor.getName())
                     //.setPartitionTopicNameLength(cursor.getLength())
-                    .setTopicNameLength(topicNameLength)
-                    .setTopicName(topicName)
+                    .setTopicsArray(topics)
                     .setCursor(cursor)
                     .setPartitionIndex(cursor.getPartitionId())
                     .setPartitionLimits(responsePartitionLimit)
@@ -129,9 +134,7 @@ public class RequestHandler {
                         versionRequest.sendResponse(out);
                         break;
                     case DESCRIBETOPICPARTITIONS:
-                        System.out.println("describeTopicPartitionsRequest");
                         describeTopicPartitionsRequest.sendResponse(out);
-                        //describeTopicPartitionsRequest.handleKafkaMetaDataCluster();
                         break;
                     default:
                         throw new Error("API KEY NOT SUPPORTED");

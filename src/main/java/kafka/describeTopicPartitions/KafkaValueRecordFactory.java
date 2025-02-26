@@ -22,8 +22,6 @@ public class KafkaValueRecordFactory {
 
         byte level = ByteBuffer.wrap(type).get();
 
-        System.out.println("level  " + level);
-
         byte[] version = in.readNBytes(1);
 
 
@@ -55,23 +53,44 @@ public class KafkaValueRecordFactory {
                         .build();
 
             case PARTITION_LEVEL:
+
+                var partitionId = in.readNBytes(4);
+                var topicUUID = in.readNBytes(16);
+                var replicaArrayLength = getUnsignedVarInt(in);
+                var replica = CompactArray.from(in, replicaArrayLength);
+                var inSyncReplicaArrayLength = getUnsignedVarInt(in);
+                var inSyncReplica = CompactArray.from(in, inSyncReplicaArrayLength);
+                var removingReplicasArrayLength = getUnsignedVarInt(in);
+                var removingReplica = CompactArray.from(in, removingReplicasArrayLength);
+                var addingReplicasCount = getUnsignedVarInt(in);
+                var addingReplicas = CompactArray.from(in, addingReplicasCount);
+                var leader = in.readNBytes(4);
+                var leaderEpoch = in.readNBytes(4);
+                var partitionEpoch = in.readNBytes(4);
+
+                var directoriesArrayLength = getUnsignedVarInt(in);
+                var directories = CompactArray.from(in, directoriesArrayLength, 16);
+
+
                 return new PartitionRecordValue.Builder()
                         .frameVersion(frameVersion)
                         .type(type)
                         .version(version)
-                        .partitionId(in.readNBytes(4))
-                        .topicUUID(in.readNBytes(16))
-                        .replicaArrayLength(getUnsignedVarInt(in))
-                        .replicaArray(in.readNBytes(4))
-                        .inSyncReplicaArrayLength(getUnsignedVarInt(in))
-                        .inSyncReplicaArray(in.readNBytes(4))
-                        .removingReplicasArrayLength(getUnsignedVarInt(in))
-                        .addingReplicasCount(getUnsignedVarInt(in))
-                        .leader(in.readNBytes(4))
-                        .leaderEpoch(in.readNBytes(4))
-                        .partitionEpoch(in.readNBytes(4))
-                        .directoriesArrayLength(getUnsignedVarInt(in))
-                        .directoriesArray(in.readNBytes(16))
+                        .partitionId(partitionId)
+                        .topicUUID(topicUUID)
+                        .replicaArrayLength(replicaArrayLength)
+                        .replicaArray(replica)
+                        .inSyncReplicaArrayLength(inSyncReplicaArrayLength)
+                        .inSyncReplicaArray(inSyncReplica)
+                        .removingReplicasArrayLength(removingReplicasArrayLength)
+                        .removingReplicasCount(removingReplica)
+                        .addingReplicasCount(addingReplicasCount)
+                        .addingReplicaArray(addingReplicas)
+                        .leader(leader)
+                        .leaderEpoch(leaderEpoch)
+                        .partitionEpoch(partitionEpoch)
+                        .directoriesArrayLength(directoriesArrayLength)
+                        .directoriesArray(directories)
                         .taggedFieldsCount(getUnsignedVarInt(in))
                         .build();
 

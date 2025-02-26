@@ -6,14 +6,15 @@ public class PartitionRecordValue extends KafkaRecordValue {
     private final int replicationLength;
     private final int inSyncReplicaArrayLength;
     private final int removingReplicasArrayLength;
-    private final byte[] replicaArray;
-    private final byte[] inSyncReplicaArray;
-    private final byte[] removingReplicasArray;
+    private final CompactArray replicaArray;
+    private final CompactArray inSyncReplicaArray;
+    private final CompactArray removingReplicasArray;
+    private final CompactArray addingReplicaArray;
     private final int addingReplicasCount;
     private final byte[] leader;
     private final byte[] leaderEpoch;
     private final byte[] partitionEpoch;
-    private final byte[] directoriesArray;
+    private final CompactArray directoriesArray;
     private int directoriesArrayLength;
 
     private PartitionRecordValue(Builder builder) {
@@ -23,6 +24,7 @@ public class PartitionRecordValue extends KafkaRecordValue {
         this.replicaArray = builder.replicaArray;
         this.inSyncReplicaArray = builder.inSyncReplicaArray;
         this.removingReplicasArray = builder.removingReplicasArray;
+        this.addingReplicaArray = builder.addingReplicaArray;
         this.addingReplicasCount = builder.addingReplicasCount;
         this.leader = builder.leader;
         this.leaderEpoch = builder.leaderEpoch;
@@ -42,7 +44,7 @@ public class PartitionRecordValue extends KafkaRecordValue {
         this.directoriesArrayLength = directoriesArrayLength;
     }
 
-    public byte[] getDirectoriesArray() {
+    public CompactArray getDirectoriesArray() {
         return directoriesArray;
     }
 
@@ -62,15 +64,15 @@ public class PartitionRecordValue extends KafkaRecordValue {
         return addingReplicasCount;
     }
 
-    public byte[] getRemovingReplicasArray() {
+    public CompactArray getRemovingReplicasArray() {
         return removingReplicasArray;
     }
 
-    public byte[] getInSyncReplicaArray() {
+    public CompactArray getInSyncReplicaArray() {
         return inSyncReplicaArray;
     }
 
-    public byte[] getReplicaArray() {
+    public CompactArray getReplicaArray() {
         return replicaArray;
     }
 
@@ -95,20 +97,26 @@ public class PartitionRecordValue extends KafkaRecordValue {
     }
 
     public static class Builder extends KafkaRecordValue.Builder<Builder> {
+        public CompactArray addingReplicaArray;
         private byte[] partitionId;
         private byte[] topicUUID;
-        private byte[] replicaArray;
-        private byte[] inSyncReplicaArray;
-        private byte[] removingReplicasArray;
+        private CompactArray replicaArray;
+        private CompactArray inSyncReplicaArray;
+        private CompactArray removingReplicasArray;
         private int addingReplicasCount;
         private byte[] leader;
         private byte[] leaderEpoch;
         private byte[] partitionEpoch;
-        private byte[] directoriesArray;
+        private CompactArray directoriesArray;
         private int replicaArrayLength;
         private int inSyncReplicaArrayLength;
         private int removingReplicasArrayLength;
         private int directoriesArrayLength;
+
+        public Builder addingReplicaArray(CompactArray addingReplicaArray) {
+            this.addingReplicaArray = addingReplicaArray;
+            return this;
+        }
 
         public Builder directoriesArrayLength(int directoriesArrayLength) {
             this.directoriesArrayLength = directoriesArrayLength;
@@ -140,17 +148,17 @@ public class PartitionRecordValue extends KafkaRecordValue {
             return this;
         }
 
-        public Builder replicaArray(byte[] replicaArray) {
+        public Builder replicaArray(CompactArray replicaArray) {
             this.replicaArray = replicaArray;
             return this;
         }
 
-        public Builder inSyncReplicaArray(byte[] inSyncReplicaArray) {
+        public Builder inSyncReplicaArray(CompactArray inSyncReplicaArray) {
             this.inSyncReplicaArray = inSyncReplicaArray;
             return this;
         }
 
-        public Builder removingReplicasCount(byte[] count) {
+        public Builder removingReplicasCount(CompactArray count) {
             this.removingReplicasArray = count;
             return this;
         }
@@ -175,7 +183,7 @@ public class PartitionRecordValue extends KafkaRecordValue {
             return this;
         }
 
-        public Builder directoriesArray(byte[] directories) {
+        public Builder directoriesArray(CompactArray directories) {
             this.directoriesArray = directories;
             return this;
         }

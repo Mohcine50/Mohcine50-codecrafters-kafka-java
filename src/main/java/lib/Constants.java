@@ -2,8 +2,10 @@ package lib;
 
 public final class Constants {
 
-    public final static short APIVERSIONS = 18;
-    public final static short DESCRIBETOPICPARTITIONS = 75;
+    public final static short API_VERSIONS = 18;
+    public final static short DESCRIBE_TOPIC_PARTITIONS = 75;
+    public final static short FETCH = 1;
+
 
     public final static byte FEATURE_LEVEL = 12;
     public final static byte TOPIC_LEVEL = 2;

@@ -4,6 +4,9 @@ import kafka.apiVersion.ApiVersionRequest;
 import kafka.describeTopicPartitions.CompactString;
 import kafka.describeTopicPartitions.Cursor;
 import kafka.describeTopicPartitions.DescribeTopicPartitionsRequest;
+import kafka.fetch.FetchPartition;
+import kafka.fetch.FetchRequest;
+import kafka.fetch.FetchTopic;
 
 import java.io.*;
 import java.net.Socket;
@@ -11,8 +14,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static lib.Constants.APIVERSIONS;
-import static lib.Constants.DESCRIBETOPICPARTITIONS;
+import static lib.Constants.*;
 
 
 public class RequestHandler {
@@ -22,6 +24,7 @@ public class RequestHandler {
 
     private DescribeTopicPartitionsRequest describeTopicPartitionsRequest;
     private ApiVersionRequest versionRequest;
+    private FetchRequest fetchRequest;
 
     public RequestHandler(Socket socket) {
         this.clientSocket = socket;
@@ -66,7 +69,7 @@ public class RequestHandler {
                 .build();
 
         // Check if the request api version is for Desccribe topic partitions
-        if (api_key == DESCRIBETOPICPARTITIONS) {
+        if (api_key == DESCRIBE_TOPIC_PARTITIONS) {
 
             // Client ID
             short clientIdLengthShort = dataInputStream.readShort();
@@ -104,12 +107,48 @@ public class RequestHandler {
                     .setContent(content)
                     .setTopicsArrayLength(topicArrayLength)
                     .setPartitionTopicName(cursor.getName())
-                    //.setPartitionTopicNameLength(cursor.getLength())
                     .setTopicsArray(topics)
                     .setCursor(cursor)
                     .setPartitionIndex(cursor.getPartitionId())
                     .setPartitionLimits(responsePartitionLimit)
                     .build();
+        } else if (api_key == FETCH) {
+            // Client ID
+            short clientIdLengthShort = dataInputStream.readShort();
+            byte[] content = dataInputStream.readNBytes(clientIdLengthShort);
+            dataInputStream.readNBytes(1); // tug buffer
+
+            byte[] replicaId = dataInputStream.readNBytes(4);
+            byte[] maxWaitMs = dataInputStream.readNBytes(4);
+            byte[] minBytes = dataInputStream.readNBytes(4);
+
+            byte[] topicsAraLength = dataInputStream.readNBytes(4);
+
+            int arrayLength = ByteBuffer.wrap(topicsAraLength).getInt();
+            List<FetchTopic> fetchTopics = new ArrayList<>();
+
+            if (arrayLength > 0) {
+
+                for (int i = 0; i < arrayLength; i++) {
+
+                    short topicNameLength = dataInputStream.readShort();
+                    byte[] topicName = dataInputStream.readNBytes(topicNameLength);
+                    var fetchPartition = new FetchPartition.Builder()
+                            .partitionId(dataInputStream.readNBytes(4))
+                            .fetchOffset(dataInputStream.readNBytes(8))
+                            .maxBytes(dataInputStream.readNBytes(4))
+                            .build();
+                    fetchTopics.add(
+                            new FetchTopic.Builder()
+                                    .addPartition(fetchPartition)
+                                    .name(topicName)
+                                    .build()
+                    );
+                }
+            }
+
+            fetchRequest = new FetchRequest(replicaId, maxWaitMs, minBytes, fetchTopics);
+
         }
         byte[] remainingBytes = new byte[dataInputStream.available()];
         dataInputStream.readFully(remainingBytes);
@@ -130,12 +169,14 @@ public class RequestHandler {
         try {
             if (apiVersion >= 0 && apiVersion <= 4) {
                 switch (apiKey) {
-                    case APIVERSIONS:
+                    case API_VERSIONS:
                         versionRequest.sendResponse(out);
                         break;
-                    case DESCRIBETOPICPARTITIONS:
+                    case DESCRIBE_TOPIC_PARTITIONS:
                         describeTopicPartitionsRequest.sendResponse(out);
                         break;
+                    case FETCH:
+                        fetchRequest.sendResponse(out);
                     default:
                         throw new Error("API KEY NOT SUPPORTED");
                 }

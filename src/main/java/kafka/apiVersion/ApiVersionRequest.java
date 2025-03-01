@@ -37,7 +37,7 @@ public class ApiVersionRequest extends KafkaRequest implements RequestInterface 
         // Correlation Id
         baos.write(this.getCorrelationId());
         baos.write(new byte[]{0, 0});
-        baos.write(3);
+        baos.write(4);
         baos.write(new byte[]{0, 18});
         baos.write(new byte[]{0, 0});
         baos.write(new byte[]{0, 4});
@@ -45,6 +45,10 @@ public class ApiVersionRequest extends KafkaRequest implements RequestInterface 
         baos.write(new byte[]{0, 75});
         baos.write(new byte[]{0, 0});
         baos.write(new byte[]{0, 0});
+        baos.write(0);
+        baos.write(new byte[]{0, 1});
+        baos.write(new byte[]{0, 0});
+        baos.write(new byte[]{0, 16});
         baos.write(0);
         baos.write(new byte[]{0, 0, 0, 0});
         baos.write(0);

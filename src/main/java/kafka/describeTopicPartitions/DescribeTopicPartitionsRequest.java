@@ -5,7 +5,6 @@ import kafka.request.KafkaRequest;
 import kafka.request.RequestInterface;
 
 import java.io.*;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -38,7 +37,6 @@ import static lib.Utils.*;
 
 public class DescribeTopicPartitionsRequest extends KafkaRequest implements RequestInterface {
 
-    private Socket clientSocket;
 
     private byte[] content;
     private byte[] topicsArrayLength;

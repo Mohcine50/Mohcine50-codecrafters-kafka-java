@@ -52,6 +52,99 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         super();
     }
 
+    public static List<KafkaRecordBatch> handleKafkaMetaDataCluster() throws IOException {
+
+        InputStream in = getMetaDataLogFileInputStream();
+
+        List<KafkaRecordBatch> kb = new ArrayList<KafkaRecordBatch>();
+
+        while (in.available() != 0) {
+            KafkaRecordBatch kafkaRecordBatch = new KafkaRecordBatch.Builder()
+                    // - Base Offset: 8 bytes
+                    .setBaseOffset(in.readNBytes(8))
+                    // - Batch Length: 4 bytes
+                    .setBatchLength(in.readNBytes(4))
+                    // - Partition Leader Epoch: 4 bytes
+                    .setPartitionLeaderEpoch(in.readNBytes(4))
+                    // - Magic Byte: 1 byte
+                    .setMagicByte(in.readNBytes(1))
+                    // - CRC: 4 bytes
+                    .setCrc(in.readNBytes(4))
+                    // - Attributes: 2 bytes
+                    .setAttributes(in.readNBytes(2))
+                    // - Last Offset Delta: 4 bytes
+                    .setLastOffsetDelta(in.readNBytes(4))
+                    // - Base Timestamp: 8 bytes
+                    .setBaseTimestamp(in.readNBytes(8))
+                    // - Max Timestamp: 8 bytes
+                    .setMaxTimestamp(in.readNBytes(8))
+                    // - Producer ID: 8 bytes
+                    .setProducerId(in.readNBytes(8))
+                    // - Producer Epoch: 2 bytes
+                    .setProducerEpoch(in.readNBytes(2))
+                    // - Base Sequence: 4 bytes
+                    .setBaseSequence(in.readNBytes(4))
+                    .build();
+
+            // - Records Length: Records Length is a 4-byte big-endian integer indicating the number of records in this batch.
+
+            byte[] recordsLength = in.readNBytes(4);
+            kafkaRecordBatch.setRecordsLength(recordsLength);
+            kafkaRecordBatch.setRecords(getKafkaRecords(in, recordsLength));
+            kb.add(kafkaRecordBatch);
+
+        }
+
+        return kb;
+
+    }
+
+    static InputStream getMetaDataLogFileInputStream() throws FileNotFoundException {
+
+        Path path = Path.of(KAFKA_METADATA_CLUSTER_LOG_FILE_PATH);
+
+
+        return new FileInputStream(path.toFile());
+    }
+
+    private static ArrayList<KafkaRecord> getKafkaRecords(InputStream in, byte[] recordsLength) throws IOException {
+
+        ArrayList<KafkaRecord> records = new ArrayList<>();
+
+
+        int length = ByteBuffer.wrap(recordsLength).getInt();
+
+
+        for (int i = 0; i < length; i++) {
+
+            KafkaRecord kafkaRecord = new KafkaRecord.Builder()
+                    .setLength(getSignedVarInt(in))
+                    .setAttributes(in.readNBytes(1))
+                    .setTimestampDelta(getSignedVarInt(in))
+                    .setOffsetDelta(getSignedVarInt(in))
+                    .setKeyLength(getSignedVarInt(in))
+                    .setKey(null)
+                    .setValueLength(getSignedVarInt(in))
+                    .setValue(KafkaValueRecordFactory.createValueRecord(in))
+                    .setHeadersArrayCount(getUnsignedVarInt(in))
+                    .build();
+
+            records.add(kafkaRecord);
+        }
+
+        return records;
+
+    }
+
+    public static Optional<TopicRecordValue> getTopicByUUID(List<KafkaRecordBatch> batches, byte[] topicUUID) {
+        return batches.stream()
+                .flatMap(batch -> batch.getRecords().stream())
+                .map(KafkaRecord::getValue)
+                .filter(val -> val instanceof TopicRecordValue)
+                .map(val -> (TopicRecordValue) val)
+                .filter(topicRecord -> Arrays.equals(topicRecord.getTopicUUID(), topicUUID))
+                .findFirst();
+    }
 
     @Override
     public void handleRequest() {
@@ -165,7 +258,6 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         out.flush();
     }
 
-
     private List<PartitionRecordValue> getPartitionsArrayForTopic(byte[] topicUUID, List<KafkaRecordBatch> batches) {
 
         return batches.stream()
@@ -177,7 +269,6 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
                 .toList();
     }
 
-
     private Optional<TopicRecordValue> getTopic(List<KafkaRecordBatch> batches, byte[] topicName) {
         return batches.stream()
                 .flatMap(batch -> batch.getRecords().stream())
@@ -186,90 +277,6 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
                 .map(val -> (TopicRecordValue) val)
                 .filter(topicRecord -> Arrays.equals(topicRecord.getTopicName(), topicName))
                 .findFirst();
-    }
-
-    InputStream getMetaDataLogFileInputStream() throws FileNotFoundException {
-
-        Path path = Path.of(KAFKA_METADATA_CLUSTER_LOG_FILE_PATH);
-
-
-        return new FileInputStream(path.toFile());
-    }
-
-    public List<KafkaRecordBatch> handleKafkaMetaDataCluster() throws IOException {
-
-        InputStream in = getMetaDataLogFileInputStream();
-
-        List<KafkaRecordBatch> kb = new ArrayList<KafkaRecordBatch>();
-
-        while (in.available() != 0) {
-            KafkaRecordBatch kafkaRecordBatch = new KafkaRecordBatch.Builder()
-                    // - Base Offset: 8 bytes
-                    .setBaseOffset(in.readNBytes(8))
-                    // - Batch Length: 4 bytes
-                    .setBatchLength(in.readNBytes(4))
-                    // - Partition Leader Epoch: 4 bytes
-                    .setPartitionLeaderEpoch(in.readNBytes(4))
-                    // - Magic Byte: 1 byte
-                    .setMagicByte(in.readNBytes(1))
-                    // - CRC: 4 bytes
-                    .setCrc(in.readNBytes(4))
-                    // - Attributes: 2 bytes
-                    .setAttributes(in.readNBytes(2))
-                    // - Last Offset Delta: 4 bytes
-                    .setLastOffsetDelta(in.readNBytes(4))
-                    // - Base Timestamp: 8 bytes
-                    .setBaseTimestamp(in.readNBytes(8))
-                    // - Max Timestamp: 8 bytes
-                    .setMaxTimestamp(in.readNBytes(8))
-                    // - Producer ID: 8 bytes
-                    .setProducerId(in.readNBytes(8))
-                    // - Producer Epoch: 2 bytes
-                    .setProducerEpoch(in.readNBytes(2))
-                    // - Base Sequence: 4 bytes
-                    .setBaseSequence(in.readNBytes(4))
-                    .build();
-
-            // - Records Length: Records Length is a 4-byte big-endian integer indicating the number of records in this batch.
-
-            byte[] recordsLength = in.readNBytes(4);
-            kafkaRecordBatch.setRecordsLength(recordsLength);
-            kafkaRecordBatch.setRecords(getKafkaRecords(in, recordsLength));
-            kb.add(kafkaRecordBatch);
-
-        }
-
-        return kb;
-
-    }
-
-    private ArrayList<KafkaRecord> getKafkaRecords(InputStream in, byte[] recordsLength) throws IOException {
-
-        ArrayList<KafkaRecord> records = new ArrayList<>();
-
-
-        int length = ByteBuffer.wrap(recordsLength).getInt();
-
-
-        for (int i = 0; i < length; i++) {
-
-            KafkaRecord kafkaRecord = new KafkaRecord.Builder()
-                    .setLength(getSignedVarInt(in))
-                    .setAttributes(in.readNBytes(1))
-                    .setTimestampDelta(getSignedVarInt(in))
-                    .setOffsetDelta(getSignedVarInt(in))
-                    .setKeyLength(getSignedVarInt(in))
-                    .setKey(null)
-                    .setValueLength(getSignedVarInt(in))
-                    .setValue(KafkaValueRecordFactory.createValueRecord(in))
-                    .setHeadersArrayCount(getUnsignedVarInt(in))
-                    .build();
-
-            records.add(kafkaRecord);
-        }
-
-        return records;
-
     }
 
     public List<KafkaRecordBatch> getKafkaRecordBatch() {

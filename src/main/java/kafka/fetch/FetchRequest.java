@@ -1,12 +1,15 @@
 package kafka.fetch;
 
 import kafka.describeTopicPartitions.CompactString;
+import kafka.describeTopicPartitions.KafkaRecordBatch;
 import kafka.request.RequestInterface;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import static kafka.describeTopicPartitions.DescribeTopicPartitionsRequest.getTopicByUUID;
+import static kafka.describeTopicPartitions.DescribeTopicPartitionsRequest.handleKafkaMetaDataCluster;
 import static lib.Utils.writeUnsignedVarint;
 
 public class FetchRequest implements RequestInterface {
@@ -22,6 +25,7 @@ public class FetchRequest implements RequestInterface {
     private final CompactString rackId;
 
     private final byte[] correlationId;
+    private List<KafkaRecordBatch> kafkaRecordBatches;
 
 
     public FetchRequest(byte[] correlationId, byte[] maxWaitMs, byte[] minBytes, byte[] isolationLevel, byte[] maxBytes, byte[] sessionId, byte[] sessionEpoch, List<FetchTopic> topics, List<ForgottenTopicsData> forgottenTopicsData, CompactString rackId) {
@@ -90,6 +94,9 @@ public class FetchRequest implements RequestInterface {
 
         System.out.println("Sending response");
 
+        this.kafkaRecordBatches = handleKafkaMetaDataCluster();
+
+
         // CorrelationId
         baos.write(this.getCorrelationId());
         // tag buffer
@@ -108,23 +115,40 @@ public class FetchRequest implements RequestInterface {
         System.out.println(topics.size());
         baos.write(writeUnsignedVarint(topics.size() + 1));
         for (FetchTopic topic : topics) {
-            baos.write(topic.getTopicId());
-            baos.write(writeUnsignedVarint(topic.getPartitions().size() + 1));
+            var _topic = getTopicByUUID(kafkaRecordBatches, topic.getTopicId());
 
-            for (FetchPartition partition : topic.getPartitions()) {
-                baos.write(partition.getPartitionId());
+            if (_topic.isPresent()) {
+                baos.write(topic.getTopicId());
+                baos.write(writeUnsignedVarint(topic.getPartitions().size() + 1));
+
+                for (FetchPartition partition : topic.getPartitions()) {
+                    baos.write(partition.getPartitionId());
+                    baos.write(new byte[]{0, 0});
+                    baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
+                    baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
+                    baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
+                    baos.write((byte) 1);
+                    baos.write(new byte[]{0, 0, 0, 0});
+                    baos.write((byte) 1);
+                    baos.write((byte) 0);
+
+                }
+            } else {
+                baos.write(topic.getTopicId());
+                baos.write(writeUnsignedVarint(2));
+                baos.write(new byte[]{0, 0, 0, 0});
                 DataOutputStream dos = new DataOutputStream(baos);
                 dos.writeShort(100);
-                dos.writeLong(0);
-                dos.writeLong(0);
-                dos.writeLong(0);
                 dos.flush();
-                baos.write(0);
-                baos.write(writeUnsignedVarint(-1));
-                baos.write(0);
+                baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
+                baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
+                baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
+                baos.write((byte) 1);
+                baos.write(new byte[]{0, 0, 0, 0});
+                baos.write((byte) 1);
+                baos.write((byte) 0);
             }
-
-            baos.write(0);
+            baos.write((byte) 0);
         }
 
 

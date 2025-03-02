@@ -2,11 +2,11 @@ package kafka.fetch;
 
 import java.util.List;
 
-public class FetchTopic {
+public class ForgottenTopicsData {
     private final byte[] topicId;
-    private final List<FetchPartition> partitions;
+    private final List<byte[]> partitions;
 
-    public FetchTopic(byte[] topicId, List<FetchPartition> partitions) {
+    public ForgottenTopicsData(byte[] topicId, List<byte[]> partitions) {
         this.topicId = topicId;
         this.partitions = partitions;
     }
@@ -15,9 +15,7 @@ public class FetchTopic {
         return topicId;
     }
 
-    public List<FetchPartition> getPartitions() {
+    public List<byte[]> getPartitions() {
         return partitions;
     }
-
-
 }

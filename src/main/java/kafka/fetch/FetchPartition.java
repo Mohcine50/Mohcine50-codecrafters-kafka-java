@@ -3,6 +3,9 @@ package kafka.fetch;
 public class FetchPartition {
 
     private final byte[] partitionId;
+    private final byte[] currentLeaderEpoch;
+    private final byte[] lastFetchEpoch;
+    private final byte[] logStartOffset;
     private final byte[] fetchOffset;
     private final byte[] maxBytes;
 
@@ -10,6 +13,21 @@ public class FetchPartition {
         this.partitionId = builder.partitionId;
         this.fetchOffset = builder.fetchOffset;
         this.maxBytes = builder.maxBytes;
+        this.currentLeaderEpoch = builder.currentLeaderEpoch;
+        this.lastFetchEpoch = builder.lastFetchEpoch;
+        this.logStartOffset = builder.logStartOffset;
+    }
+
+    public byte[] getCurrentLeaderEpoch() {
+        return currentLeaderEpoch;
+    }
+
+    public byte[] getLastFetchEpoch() {
+        return lastFetchEpoch;
+    }
+
+    public byte[] getLogStartOffset() {
+        return logStartOffset;
     }
 
     public byte[] getPartitionId() {
@@ -26,8 +44,28 @@ public class FetchPartition {
 
     public static class Builder {
         private byte[] partitionId;
+        private byte[] currentLeaderEpoch;
+        private byte[] lastFetchEpoch;
+        private byte[] logStartOffset;
         private byte[] fetchOffset;
         private byte[] maxBytes;
+
+
+        public Builder currentLeaderEpoch(byte[] currentLeaderEpoch) {
+            this.currentLeaderEpoch = currentLeaderEpoch;
+            return this;
+        }
+
+        public Builder lastFetchEpoch(byte[] lastFetchEpoch) {
+            this.lastFetchEpoch = lastFetchEpoch;
+            return this;
+        }
+
+        public Builder logStartOffset(byte[] logStartOffset) {
+            this.logStartOffset = logStartOffset;
+            return this;
+        }
+
 
         public Builder partitionId(byte[] partitionId) {
             this.partitionId = partitionId;

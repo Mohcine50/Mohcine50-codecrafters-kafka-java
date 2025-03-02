@@ -3,12 +3,11 @@ package kafka.fetch;
 import kafka.describeTopicPartitions.CompactString;
 import kafka.request.RequestInterface;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.List;
+
+import static lib.Utils.writeUnsignedVarint;
 
 public class FetchRequest implements RequestInterface {
 
@@ -89,6 +88,8 @@ public class FetchRequest implements RequestInterface {
     public void sendResponse(OutputStream out) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
+        System.out.println("Sending response");
+
         // CorrelationId
         baos.write(this.getCorrelationId());
         // tag buffer
@@ -104,7 +105,27 @@ public class FetchRequest implements RequestInterface {
         baos.write(new byte[]{0, 0, 0, 0});
 
         // Responses
-        baos.write((byte) 0);
+        System.out.println(topics.size());
+        baos.write(writeUnsignedVarint(topics.size() + 1));
+        for (FetchTopic topic : topics) {
+            baos.write(topic.getTopicId());
+            baos.write(writeUnsignedVarint(topic.getPartitions().size() + 1));
+
+            for (FetchPartition partition : topic.getPartitions()) {
+                baos.write(partition.getPartitionId());
+                DataOutputStream dos = new DataOutputStream(baos);
+                dos.writeShort(100);
+                dos.writeLong(0);
+                dos.writeLong(0);
+                dos.writeLong(0);
+                dos.flush();
+                baos.write(0);
+                baos.write(writeUnsignedVarint(-1));
+                baos.write(0);
+            }
+
+            baos.write(0);
+        }
 
 
         // Tag Buffer

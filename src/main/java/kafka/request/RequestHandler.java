@@ -132,6 +132,7 @@ public class RequestHandler {
             int arrayLength = readUnsignedVarint(dataInputStream);
             List<FetchTopic> fetchTopics = new ArrayList<>();
 
+
             for (int i = 0; i < arrayLength - 1; i++) {
 
                 byte[] topicId = dataInputStream.readNBytes(16);
@@ -167,27 +168,32 @@ public class RequestHandler {
             int forgottenTopicsDataLength = readUnsignedVarint(dataInputStream);
 
 
-            for (int i = 0; i < forgottenTopicsDataLength - 1; i++) {
-                byte[] topicId = dataInputStream.readNBytes(16);
+            if (forgottenTopicsDataLength > 0) {
+                for (int i = 0; i < forgottenTopicsDataLength - 1; i++) {
 
-                int pArrayLength = readUnsignedVarint(dataInputStream);
+                    byte[] topicId = dataInputStream.readNBytes(16);
 
-                List<byte[]> partitions = new ArrayList<>();
+                    int pArrayLength = readUnsignedVarint(dataInputStream);
 
-                for (int j = 0; j < pArrayLength - 1; j++) {
-                    partitions.add(dataInputStream.readNBytes(4));
+                    List<byte[]> partitions = new ArrayList<>();
+
+                    for (int j = 0; j < pArrayLength - 1; j++) {
+                        partitions.add(dataInputStream.readNBytes(4));
+                    }
+                    forgottenTopicsData.add(new ForgottenTopicsData(topicId, partitions));
+                    dataInputStream.readNBytes(1);
                 }
-                forgottenTopicsData.add(new ForgottenTopicsData(topicId, partitions));
-                dataInputStream.readNBytes(1);
             }
 
             // Rack Id Length
-            byte[] rackIdLength = dataInputStream.readNBytes(1);
+            byte rackIdLength = dataInputStream.readByte();
+            CompactString rackId = null;
+            if (forgottenTopicsDataLength > 0) {
+                rackId = CompactString.from(in, rackIdLength);
+            }
             // Rack Id
-            CompactString rackId = CompactString.from(in, ByteBuffer.wrap(rackIdLength).get());
             dataInputStream.readNBytes(1);
             fetchRequest = new FetchRequest(correlation_id, maxWaitMs, minBytes, isolationLevel, maxBytes, sessionId, sessionEpoch, fetchTopics, forgottenTopicsData, rackId);
-
         }
         byte[] remainingBytes = new byte[dataInputStream.available()];
         dataInputStream.readFully(remainingBytes);

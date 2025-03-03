@@ -6,6 +6,7 @@ import kafka.request.RequestInterface;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static kafka.describeTopicPartitions.DescribeTopicPartitionsRequest.getTopicByUUID;
@@ -118,10 +119,18 @@ public class FetchRequest implements RequestInterface {
             var _topic = getTopicByUUID(kafkaRecordBatches, topic.getTopicId());
 
             if (_topic.isPresent()) {
+                var data = _topic.get();
                 baos.write(topic.getTopicId());
                 baos.write(writeUnsignedVarint(topic.getPartitions().size() + 1));
 
                 for (FetchPartition partition : topic.getPartitions()) {
+
+                    String topicName = new String(data.getTopicName(), StandardCharsets.UTF_8);
+                    int partitionIndex = ByteBuffer.wrap(partition.getPartitionId()).getInt();
+                    TopicFile topicFile = TopicFile.New(topicName, partitionIndex);
+
+                    List<byte[]> records = topicFile.getBatchRecords();
+
                     baos.write(partition.getPartitionId());
                     baos.write(new byte[]{0, 0});
                     baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
@@ -129,7 +138,10 @@ public class FetchRequest implements RequestInterface {
                     baos.write(new byte[]{0, 0, 0, 0, 0, 0, 0, 0});
                     baos.write((byte) 1);
                     baos.write(new byte[]{0, 0, 0, 0});
-                    baos.write((byte) 1);
+                    baos.write((byte) records.size() + 1);
+                    for (byte[] record : records) {
+                        baos.write(record);
+                    }
                     baos.write((byte) 0);
 
                 }

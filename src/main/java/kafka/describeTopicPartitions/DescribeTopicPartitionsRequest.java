@@ -96,14 +96,11 @@ public class DescribeTopicPartitionsRequest extends KafkaRequest implements Requ
         }
 
         return kb;
-
     }
 
-    static InputStream getMetaDataLogFileInputStream() throws FileNotFoundException {
+    public static InputStream getMetaDataLogFileInputStream() throws FileNotFoundException {
 
         Path path = Path.of(KAFKA_METADATA_CLUSTER_LOG_FILE_PATH);
-
-
         return new FileInputStream(path.toFile());
     }
 
